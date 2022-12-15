@@ -17,7 +17,7 @@ stages:
                   azureSubscription: 'Visual Studio Enterprise Subscription(fd66b37e-19f7-4076-b116-86e68b57ddc2)'
                   scriptType: 'bash'
                   scriptLocation: 'scriptPath'
-                  scriptPath: './infrastructure/init-infrastructure'
+                  scriptPath: './infrastructure/init-infrastructure.sh'
                 env:
                   CR_PAT: $(CR_PAT)
               - task: Bash@3
@@ -85,7 +85,7 @@ stages:
                   azureSubscription: 'Visual Studio Enterprise Subscription(fd66b37e-19f7-4076-b116-86e68b57ddc2)'
                   scriptType: 'bash'
                   scriptLocation: 'scriptPath'
-                  scriptPath: 'test'
+                  scriptPath: 'infrastructure/deploy-infrastructure.sh'
                 env:
                   MONGODB_CONNECTION: $(MONGODB_CONNECTION)
                   AI_KEY: $(AI_KEY)
