@@ -34,7 +34,9 @@ stages:
     jobs:
     - job: 'InsertAppInsightsKey'
       displayName: 'Insert App Insights Key into App' 
-      dependsOn: 
+      dependsOn: 'SetOutputs'
+      variables:
+        AI_KEY: $(SetOutputs.AI_KEY)
       steps: 
       - checkout: self
       - task: Bash@3
@@ -43,7 +45,7 @@ stages:
           script: |
             sed -i "s/^appInsights\.setup.*/appInsights\.setup(\"${{ AI_KEY }}\");/" ./content-web/app.js
         env:
-          AI_KEY: $(SetOutputs.AI_KEY)
+          AI_KEY: $(AI_KEY)
     - job: 'BuildAndpublish'
       displayName: 'Build and Publish'
       steps:
@@ -70,6 +72,11 @@ stages:
     jobs:
     - deployment: infrastructure
       environment: production
+      dependsOn: 'SetOutputs'
+      variables: 
+        MONGODB_CONNECTION: $(SetOutputs.MONGODB_CONNECTION)
+        AI_KEY: $(SetOutputs.AI_KEY)
+        AI_CONNECTION: $(SetOutputs.AI_CONNECTION)
       strategy:
         runOnce:
           deploy:
