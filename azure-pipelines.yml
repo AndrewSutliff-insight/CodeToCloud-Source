@@ -34,9 +34,8 @@ stages:
     jobs:
     - job: 'InsertAppInsightsKey'
       displayName: 'Insert App Insights Key into App' 
-      dependsOn: 'SetOutputs'
       variables:
-        AI_KEY: $(SetOutputs.AI_KEY)
+        AI_KEY: $[InitProd.SetOutputs]
       steps: 
       - checkout: self
       - task: Bash@3
@@ -74,9 +73,9 @@ stages:
       environment: production
       dependsOn: 'SetOutputs'
       variables: 
-        MONGODB_CONNECTION: $(SetOutputs.MONGODB_CONNECTION)
-        AI_KEY: $(SetOutputs.AI_KEY)
-        AI_CONNECTION: $(SetOutputs.AI_CONNECTION)
+        MONGODB_CONNECTION: $[InitProd.SetOutputs.MONGODB_CONNECTION]
+        AI_KEY: $[InitProd.SetOutputs.AI_KEY]
+        AI_CONNECTION: $[InitProd.SetOutputs.AI_CONNECTION}
       strategy:
         runOnce:
           deploy:
