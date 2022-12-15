@@ -67,11 +67,10 @@ stages:
           additionalImageTags: '$(Build.BuildNumber)'
 
   - stage: DeployProd
-    dependsOn: build
+    dependsOn: [build, InitProd]
     jobs:
     - deployment: infrastructureConfig
       environment: production
-      dependsOn: 'SetOutputs'
       variables: 
         MONGODB_CONNECTION: $[InitProd.infrastructure.SetOutputs.MONGODB_CONNECTION]
         AI_KEY: $[InitProd.infrastructure.SetOutputs.AI_KEY]
