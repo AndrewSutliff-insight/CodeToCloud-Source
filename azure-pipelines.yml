@@ -3,8 +3,36 @@ pool:
   vmImage: ubuntu-latest
 
 stages:
-  - stage: build
+  - stage: InitProd
     jobs:
+    - deployment: infrastructure
+      environment: production
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - task: AzureCLI@2
+                inputs:
+                  azureSubscription: 'Visual Studio Enterprise Subscription(fd66b37e-19f7-4076-b116-86e68b57ddc2)'
+                  scriptType: 'bash'
+                  scriptLocation: 'scriptPath'
+                  scriptPath: 'test'
+                env:
+                  CR_PAT: $(CR_PAT)
+
+  - stage: build
+    dependsOn: InitProd
+    jobs:
+    - job: 'InsertAppInsightsKey'
+      displayName: 'Insert App Insights Key into App' 
+      steps: 
+      - checkout: self
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          script: |
+            sed -i "s/^appInsights.setup.*/appInsights\.setup(\"${{ needs.infra_init.outputs.AI_KEY }}\");/" ./content-web/app.js
     - job: 'BuildAndpublish'
       displayName: 'Build and Publish'
       steps:
@@ -28,4 +56,20 @@ stages:
 
   - stage: DeployProd
     dependsOn: build
+    jobs:
+    - deployment: infrastructure
+      environment: production
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - task: AzureCLI@2
+                inputs:
+                  azureSubscription: 'Visual Studio Enterprise Subscription(fd66b37e-19f7-4076-b116-86e68b57ddc2)'
+                  scriptType: 'bash'
+                  scriptLocation: 'scriptPath'
+                  scriptPath: 'test'
+                env:
+                  CR_PAT: $(CR_PAT)
 
