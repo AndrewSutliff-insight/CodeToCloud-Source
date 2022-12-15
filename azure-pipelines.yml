@@ -5,6 +5,7 @@ pool:
 stages:
   - stage: InitProd
     jobs:
+    - 
     - deployment: infrastructure
       environment: production
       strategy:
@@ -17,22 +18,33 @@ stages:
                   azureSubscription: 'Visual Studio Enterprise Subscription(fd66b37e-19f7-4076-b116-86e68b57ddc2)'
                   scriptType: 'bash'
                   scriptLocation: 'scriptPath'
-                  scriptPath: 'test'
+                  scriptPath: './infrastructure/init-infrastructure'
                 env:
                   CR_PAT: $(CR_PAT)
+              - task: Bash@3
+                name: SetOutputs
+                inputs:
+                  targetType: inline
+                  script: |
+                    echo "##vso[task.setvariable variable=AI_CONNECTION;isOutput=true;]$AI_CONNECTION"
+                    echo "##vso[task.setvariable variable=AI_KEY;isOutput=true;]$AI_KEY"
+                    echo "##vso[task.setvariable variable=MONGODB_CONNECTION;isOutput=true;]$MONGODB_CONNECTION"
 
   - stage: build
     dependsOn: InitProd
     jobs:
     - job: 'InsertAppInsightsKey'
       displayName: 'Insert App Insights Key into App' 
+      dependsOn: 
       steps: 
       - checkout: self
       - task: Bash@3
         inputs:
           targetType: 'inline'
           script: |
-            sed -i "s/^appInsights.setup.*/appInsights\.setup(\"${{ needs.infra_init.outputs.AI_KEY }}\");/" ./content-web/app.js
+            sed -i "s/^appInsights\.setup.*/appInsights\.setup(\"${{ AI_KEY }}\");/" ./content-web/app.js
+        env:
+          AI_KEY: $(SetOutputs.AI_KEY)
     - job: 'BuildAndpublish'
       displayName: 'Build and Publish'
       steps:
@@ -55,7 +67,7 @@ stages:
           additionalImageTags: '$(Build.BuildNumber)'
 
   - stage: DeployProd
-    dependsOn: build
+    dependsOn: build, InitProd
     jobs:
     - deployment: infrastructure
       environment: production
@@ -71,5 +83,6 @@ stages:
                   scriptLocation: 'scriptPath'
                   scriptPath: 'test'
                 env:
-                  CR_PAT: $(CR_PAT)
-
+                  MONGODB_CONNECTION: $(SetOutputs.MONGODB_CONNECTION)
+                  AI_KEY: $(SetOutputs.AI_KEY)
+                  AI_CONNECTION: $(SetOutputs.AI_CONNECTION)
