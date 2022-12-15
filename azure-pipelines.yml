@@ -1,19 +1,92 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-trigger:
-- main
 
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+stages:
+  - stage: InitProd
+    jobs:
+    - deployment: infrastructure
+      environment: production
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - task: AzureCLI@2
+                inputs:
+                  azureSubscription: 'Visual Studio Enterprise Subscription(fd66b37e-19f7-4076-b116-86e68b57ddc2)'
+                  scriptType: 'bash'
+                  scriptLocation: 'scriptPath'
+                  scriptPath: './infrastructure/init-infrastructure.sh'
+                env:
+                  CR_PAT: $(CR_PAT)
+              - task: Bash@3
+                name: SetOutputs
+                inputs:
+                  targetType: inline
+                  script: |
+                    echo "##vso[task.setvariable variable=AI_CONNECTION;isOutput=true;]$AI_CONNECTION"
+                    echo "##vso[task.setvariable variable=AI_KEY;isOutput=true;]$AI_KEY"
+                    echo "##vso[task.setvariable variable=MONGODB_CONNECTION;isOutput=true;]$MONGODB_CONNECTION"
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  - stage: build
+    dependsOn: InitProd
+    jobs:
+    - job: 'InsertAppInsightsKey'
+      displayName: 'Insert App Insights Key into App' 
+      variables:
+        AI_KEY: $[InitProd.infrastructure.SetOutputs.AI_KEY]
+      steps: 
+      - checkout: self
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          script: |
+            sed -i "s/^appInsights\.setup.*/appInsights\.setup(\"${ AI_KEY }\");/" ./content-web/app.js
+        env:
+          AI_KEY: $(AI_KEY)
+    - job: 'BuildAndpublish'
+      displayName: 'Build and Publish'
+      steps:
+      - checkout: self
+      - task: DockerCompose@0
+        inputs:
+          containerregistrytype: 'Container Registry'
+          dockerRegistryEndpoint: 'GitHub Container Registry'
+          dockerComposeFile: '**/docker-compose.yml'
+          additionalDockerComposeFiles: 'build.docker-compose.yaml'
+          action: 'Build services'
+          additionalImageTags: '$(Build.BuildNumber)'
+      - task: DockerCompose@0
+        inputs:
+          containerregistrytype: 'Container Registry'
+          dockerRegistryEndpoint: 'GitHub Container Registry'
+          dockerComposeFile: '**/docker-compose.yml'
+          additionalDockerComposeFiles: 'build.docker-compose.yaml'
+          action: 'Push services'
+          additionalImageTags: '$(Build.BuildNumber)'
+
+  - stage: DeployProd
+    dependsOn: [build, InitProd]
+    jobs:
+    - deployment: infrastructureConfig
+      environment: production
+      variables: 
+        MONGODB_CONNECTION: $[InitProd.infrastructure.SetOutputs.MONGODB_CONNECTION]
+        AI_KEY: $[InitProd.infrastructure.SetOutputs.AI_KEY]
+        AI_CONNECTION: $[InitProd.infrastructure.SetOutputs.AI_CONNECTION}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - task: AzureCLI@2
+                inputs:
+                  azureSubscription: 'Visual Studio Enterprise Subscription(fd66b37e-19f7-4076-b116-86e68b57ddc2)'
+                  scriptType: 'bash'
+                  scriptLocation: 'scriptPath'
+                  scriptPath: 'infrastructure/deploy-infrastructure.sh'
+                env:
+                  MONGODB_CONNECTION: $(MONGODB_CONNECTION)
+                  AI_KEY: $(AI_KEY)
+                  AI_CONNECTION: $(AI_CONNECTION)
