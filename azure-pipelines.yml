@@ -67,7 +67,7 @@ stages:
           additionalImageTags: '$(Build.BuildNumber)'
 
   - stage: DeployProd
-    dependsOn: [build, InitProd]
+    dependsOn: build
     jobs:
     - deployment: infrastructureConfig
       environment: production
