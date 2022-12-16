@@ -1,10 +1,10 @@
-FROM node:alpine AS base
+FROM node:dubnium-alpine AS base
 RUN apk -U add curl
 WORKDIR /usr/src/app
 EXPOSE 3001
 ENV MONGODB_CONNECTION=mongodb://mongo:27017/contentdb
 
-FROM node:alpine AS build
+FROM node:dubnium-alpine AS build
 WORKDIR /usr/src/app
 
 # Install app dependencies

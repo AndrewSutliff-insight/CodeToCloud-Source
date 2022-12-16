@@ -1,6 +1,10 @@
 version: "3.4"
 
 services:
+  mongo:
+    image: mongo
+    restart: always
+
   init:
     build: ./content-init
     image: ghcr.io/andrewsutliff-insight/fabrikam-init:latest
