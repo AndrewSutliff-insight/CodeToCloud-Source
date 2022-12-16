@@ -43,6 +43,10 @@ stages:
                   containerRegistry: 'GitHub Container Registry'
                   command: 'login'
               - bash: sed -i "s/latest/$(Build.BuildNumber)/" ./docker-compose.yml
+              - task: Docker@2
+                inputs:
+                  containerRegistry: 'GitHub Container Registry'
+                  command: 'login'
               - task: AzureCLI@2
                 inputs:
                   azureSubscription: 'fabrikam-sp-for-ado'
