@@ -21,9 +21,9 @@ az appservice plan create --name $PLAN_NAME --resource-group $RESOURCE_GROUP_NAM
 
 az webapp create --resource-group $RESOURCE_GROUP_NAME --plan $PLAN_NAME --name $WEBAPP_NAME -i nginx
 
-MONGODB_CONNECTION=$(az cosmosdb keys list -n $DB_NAME  -g $RESOURCE_GROUP_NAME --type connection-strings \
---query "connectionStrings[?description=='Primary MongoDB Connection String'].connectionString" | tr -d '\n',' ','[',']','\"' | sed s/\?/contentdb\?/)
-docker run --rm -e MONGODB_CONNECTION=$MONGODB_CONNECTION ghcr.io/andrewsutliff-insight/fabrikam-init
+# MONGODB_CONNECTION=$(az cosmosdb keys list -n $DB_NAME  -g $RESOURCE_GROUP_NAME --type connection-strings \
+# --query "connectionStrings[?description=='Primary MongoDB Connection String'].connectionString" | tr -d '\n',' ','[',']','\"' | sed s/\?/contentdb\?/)
+# docker run --rm -e MONGODB_CONNECTION=$MONGODB_CONNECTION ghcr.io/andrewsutliff-insight/fabrikam-init
 
 az extension add --name application-insights
 AI=$(az monitor app-insights component show --app $APP_INSIGHTS --resource-group $RESOURCE_GROUP_NAME)
