@@ -65,5 +65,5 @@ stages:
                   command: 'login'
               - bash: |
                   echo $MONGODB_CONNECTION
-                  docker run --rm -e MONGODB_CONNECTION=$(MONGODB_CONNECTION) ghcr.io/andrewsutliff-insight/fabrikam-init
+                  docker run --rm -e MONGODB_CONNECTION=$MONGODB_CONNECTION ghcr.io/andrewsutliff-insight/fabrikam-init
 
