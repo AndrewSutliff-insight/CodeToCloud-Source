@@ -1,4 +1,3 @@
-
 trigger:
 - main
 
@@ -43,10 +42,6 @@ stages:
                   containerRegistry: 'GitHub Container Registry'
                   command: 'login'
               - bash: sed -i "s/latest/$(Build.BuildNumber)/" ./docker-compose.yml
-              - task: Docker@2
-                inputs:
-                  containerRegistry: 'GitHub Container Registry'
-                  command: 'login'
               - task: AzureCLI@2
                 inputs:
                   azureSubscription: 'fabrikam-sp-for-ado'
@@ -55,3 +50,20 @@ stages:
                   scriptPath: './infrastructure/ado-pipelines.deploy-infrastructure.sh'
                 env:
                   CR_PAT: $(CR_PAT)
+              - task: AzureCLI@2
+                name: getString
+                inputs:
+                  azureSubscription: 'fabrikam-sp-for-ado'
+                  scriptType: bash
+                  scriptLocation: 'inlineScript'
+                  inlineScript: |
+                    MongoString=$(az cosmosdb keys list -n "fabrikam-cdb-aes" -g "fabrikam-rg-aes" --type connection-strings --query "connectionStrings[?description=='Primary MongoDB Connection String'].connectionString" | tr -d '\n',' ','[',']','\"' | sed s/\?/contentdb\?/)
+                    echo "##vso[task.setvariable variable=MONGODB_CONNECTION]$MongoString"
+              - task: Docker@2
+                inputs:
+                  containerRegistry: 'GitHub Container Registry'
+                  command: 'login'
+              - bash: |
+                  echo $MONGODB_CONNECTION
+                  docker run --rm -e MONGODB_CONNECTION=$(MONGODB_CONNECTION) ghcr.io/andrewsutliff-insight/fabrikam-init
+
